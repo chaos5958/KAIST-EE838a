@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import pdb
 
 #Encoder: convolution + ReLU layer
 class Conv_ReLU_Block(nn.Module):
-    def __init__(self, num_features, bias=True):
+    def __init__(self, num_features_in, num_features_out, bias=True):
         super(Conv_ReLU_Block, self).__init__()
-        self.conv = nn.Conv2d(in_channels=num_features, out_channels=num_features, kernel_size=3, stride=1, padding=1, bias=bias)
+        self.conv = nn.Conv2d(in_channels=num_features_in, out_channels=num_features_out, kernel_size=3, stride=1, padding=1, bias=bias)
         self.relu = nn.ReLU(True)
 
     def forward(self, x):
@@ -14,9 +15,9 @@ class Conv_ReLU_Block(nn.Module):
 
 #Encoder: convolution + ReLU layer
 class Conv_ReLU_Pool_Block(nn.Module):
-    def __init__(self, num_features, bias=True):
+    def __init__(self, num_features_in, num_features_out, bias=True):
         super(Conv_ReLU_Pool_Block, self).__init__()
-        self.conv = nn.Conv2d(in_channels=num_features, out_channels=num_features, kernel_size=3, stride=1, padding=1, bias=bias)
+        self.conv = nn.Conv2d(in_channels=num_features_in, out_channels=num_features_out, kernel_size=3, stride=1, padding=1, bias=bias)
         self.relu = nn.ReLU(True)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
@@ -25,9 +26,9 @@ class Conv_ReLU_Pool_Block(nn.Module):
 
 #Decoder: skip-connection layer
 class Skip_Conv(nn.Module):
-    def __init__(self, num_features, bias=True):
+    def __init__(self, num_features_in, num_features_out, bias=True):
         super(Skip_Conv, self).__init__()
-        self.conv = nn.Conv2d(in_channels=num_features * 2, out_channels=num_features, kernel_size=1, stride=1, padding=0, bias=bias)
+        self.conv = nn.Conv2d(in_channels=num_features_in * 2, out_channels=num_features_out, kernel_size=1, stride=1, padding=0, bias=bias)
 
         #Weight initialization: TODO
         """
@@ -48,10 +49,10 @@ class Skip_Conv(nn.Module):
 
 #Decoder: deconvolution layer
 class Deconv(nn.Module):
-    def __init__(self, num_features, bias=True):
+    def __init__(self, num_features_in, num_features_out, bias=True):
         super(Deconv, self).__init__()
-        self.deconv = nn.ConvTranspose2d(in_channels=num_features, out_channels=num_features, kernel_size=4, stride=2, padding=1)
-        self.batch = nn.BatchNorm2d(num_features)
+        self.deconv = nn.ConvTranspose2d(in_channels=num_features_in, out_channels=num_features_out, kernel_size=4, stride=2, padding=1)
+        self.batch = nn.BatchNorm2d(num_features_out)
         self.relu= nn.ReLU(True)
 
         #Weight initialization: TODO
@@ -64,19 +65,19 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
 
         #LDR encoder
-        encode_1_1 = Conv_ReLU_Block(64)
-        encode_1_2 = Conv_ReLU_Block(64)
-        encode_2_1 = Conv_ReLU_Pool_Block(128)
-        encode_2_2 = Conv_ReLU_Block(128)
-        encode_3_1 = Conv_ReLU_Pool_Block(256)
-        encode_3_2 = Conv_ReLU_Block(256)
-        encode_3_3 = Conv_ReLU_Block(256)
-        encode_4_1 = Conv_ReLU_Pool_Block(512)
-        encode_4_2 = Conv_ReLU_Block(512)
-        encode_4_3 = Conv_ReLU_Block(512)
-        encode_5_1 = Conv_ReLU_Pool_Block(512)
-        encode_5_2 = Conv_ReLU_Block(512)
-        encode_5_3 = Conv_ReLU_Block(512)
+        encode_1_1 = Conv_ReLU_Block(3, 64)
+        encode_1_2 = Conv_ReLU_Block(64, 64)
+        encode_2_1 = Conv_ReLU_Pool_Block(64, 128)
+        encode_2_2 = Conv_ReLU_Block(128, 128)
+        encode_3_1 = Conv_ReLU_Pool_Block(128, 256)
+        encode_3_2 = Conv_ReLU_Block(256, 256)
+        encode_3_3 = Conv_ReLU_Block(256, 256)
+        encode_4_1 = Conv_ReLU_Pool_Block(256, 512)
+        encode_4_2 = Conv_ReLU_Block(512, 512)
+        encode_4_3 = Conv_ReLU_Block(512, 512)
+        encode_5_1 = Conv_ReLU_Pool_Block(512, 512)
+        encode_5_2 = Conv_ReLU_Block(512, 512)
+        encode_5_3 = Conv_ReLU_Block(512, 512)
 
         self.encoder = nn.ModuleList()
         self.encoder.append(nn.Sequential(*[encode_1_1, encode_1_2]))
@@ -87,35 +88,36 @@ class UNet(nn.Module):
 
         #Latent Representation
         self.latent = []
-        self.latent.append(Conv_ReLU_Pool_Block(512))
-        self.latent.append(Conv_ReLU_Block(512))
-        self.latent.append(Deconv(512))
+        self.latent.append(Conv_ReLU_Pool_Block(512, 512))
+        self.latent.append(Conv_ReLU_Block(512, 512))
+        self.latent.append(Deconv(512, 512))
         self.latent = nn.Sequential(*self.latent)
 
         #HDR decoder
         self.decoder = nn.ModuleList()
-        decode_1_1 = Skip_Conv(512)
-        decode_1_2 = Deconv(512)
-        decode_2_1 = Skip_Conv(512)
-        decode_2_2 = Deconv(512)
-        decode_3_1 = Skip_Conv(256)
-        decode_3_2 = Deconv(256)
-        decode_4_1 = Skip_Conv(128)
-        decode_4_2 = Deconv(128)
-        decode_5_1 = Skip_Conv(64)
+        decode_1_1 = Skip_Conv(512, 512)
+        decode_1_2 = Deconv(512, 512)
+        decode_2_1 = Skip_Conv(512, 512)
+        decode_2_2 = Deconv(512, 256)
+        decode_3_1 = Skip_Conv(256, 256)
+        decode_3_2 = Deconv(256, 128)
+        decode_4_1 = Skip_Conv(128, 128)
+        decode_4_2 = Deconv(128, 64)
+        decode_5_1 = Skip_Conv(64, 64)
         conv = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1, stride=1, padding=0, bias=True)
         batch_norm = nn.BatchNorm2d(3)
         relu = nn.ReLU(True)
         decode_5_2 = nn.Sequential(*[conv, batch_norm, relu])
-        decode_6_1 = Skip_Conv(3)
+        decode_6_1 = Skip_Conv(3, 3)
 
         self.decoder = nn.ModuleList()
-        self.decoder.append(nn.Sequential(*[decode_1_1, decode_1_2]))
-        self.decoder.append(nn.Sequential(*[decode_2_1, decode_2_2]))
-        self.decoder.append(nn.Sequential(*[decode_3_1, decode_3_2]))
-        self.decoder.append(nn.Sequential(*[decode_4_1, decode_4_2]))
-        self.decoder.append(nn.Sequential(*[decode_5_1, decode_5_2]))
-        self.decoder.append(nn.Sequential(*[decode_6_1]))
+
+        self.decoder.append(nn.ModuleList().extend((decode_1_1, decode_1_2)))
+        self.decoder.append(nn.ModuleList().extend((decode_2_1, decode_2_2)))
+        self.decoder.append(nn.ModuleList().extend((decode_3_1, decode_3_2)))
+        self.decoder.append(nn.ModuleList().extend((decode_4_1, decode_4_2)))
+        self.decoder.append(nn.ModuleList().extend((decode_5_1, decode_5_2)))
+        self.decoder.append(decode_6_1)
 
     def forward(self, x):
         #LDR encoder
@@ -135,20 +137,33 @@ class UNet(nn.Module):
         x = self.latent(x)
 
         #HDR decoder
-        x = self.decoder[0](x, output5)
-        x = self.decoder[1](x, output4)
-        x = self.decoder[2](x, output3)
-        x = self.decoder[3](x, output2)
-        x = self.decoder[4](x, output1)
+        #pdb.set_trace()
+        x = self.decoder[0][0](x, output5)
+        x = self.decoder[0][1](x)
+        x = self.decoder[1][0](x, output4)
+        x = self.decoder[1][1](x)
+        x = self.decoder[2][0](x, output3)
+        x = self.decoder[2][1](x)
+        x = self.decoder[3][0](x, output2)
+        x = self.decoder[3][1](x)
+        x = self.decoder[4][0](x, output1)
+        x = self.decoder[4][1](x)
         x = self.decoder[5](x, input_image)
 
         #Final
         max_input, _ = torch.max(input_image, dim=1)
-        alpha = torch.min(1, torch.max(0, max_input - 0.95) / 0.05)
+        alpha = torch.clamp(torch.clamp(max_input - 0.95, min=0) / 0.05, max=1)
         alpha = torch.stack((alpha, alpha, alpha), dim=1)
         output = torch.mul(1-alpha, torch.pow(input_image, 2)) + torch.mul(alpha, torch.exp(x))
 
         return output
 
 if __name__ == "__main__":
-    UNet()
+    device = torch.device("cuda:3")
+
+    model = UNet().to(device)
+    tensor = torch.FloatTensor(1, 3, 320, 320).to(device)
+
+    output = model(tensor)
+    print(output.size())
+
