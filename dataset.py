@@ -42,7 +42,7 @@ class LdrHdrDataset(Dataset):
 
     def __len__(self):
         if self.is_train:
-            return self.num_batch * 1000
+            return self.num_batch * 10
         else:
             return len(self.hdr_images)
 
@@ -51,14 +51,14 @@ class LdrHdrDataset(Dataset):
             idx = random.randint(0, len(self.hdr_images) - 1)
             img  = self.hdr_images[idx]
 
-            ldr_img, hdr_img = self.composed_ldr(img)
+            ldr_img, hdr_img, normalized_value = self.composed_ldr(img)
         else:
             assert idx != None
             img = self.hdr_images[idx]
 
-            ldr_img, hdr_img = self.composed_ldr(img)
+            ldr_img, hdr_img, normalized_value = self.composed_ldr(img)
 
-        return ldr_img, hdr_img
+        return ldr_img, hdr_img, normalized_value
 
 if __name__ == "__main__":
     dataset = LdrHdrDataset('train/HDR', True)

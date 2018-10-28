@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import random, logging, os
 
-HDR_MIN = 0
+HDR_MIN = 0.00001
 HDR_MAX = 100000
 HDR_H = 1080
 HDR_W = 1920
@@ -60,24 +60,26 @@ class Normalize(object):
     def __call__(self, image):
         image_mean = np.mean(image, axis=2)
         image_1d = image_mean.flatten()
+        image_1d.sort(axis=0)
 
         rand_idx = np.random.randint(self.num_pixels * NORMALIZE_MIN, self.num_pixels * NORMALIZE_MAX)
         normalized_value = image_1d[-rand_idx]
         image = image / normalized_value
 
-        return image
+        return (image, normalized_value)
 
 class CameraCurve(object):
-    def __call__(self, image):
-        target = image #target (x Camera curve)
+    def __call__(self, data):
+        target = data[0] #target (x Camera curve)
+        normalized_value = data[1]
 
         n = np.clip(np.random.normal(N_MEAN, N_VAR), a_min=0, a_max=2.5)
         sig = np.clip(np.random.normal(SIG_MEAN, SIG_VAR), a_min=0, a_max=5)
 
-        input = np.power(image, n)
+        input = np.power(target, n)
         input = (1 + sig) * (input / (input + sig)) #input (o Camera curve)
 
-        return (input, target)
+        return (input, target, normalized_value)
 
 class Pad(object):
     def __call__(self, image):
@@ -86,9 +88,10 @@ class Pad(object):
         return image
 
 class ToTensor(object):
-    def __call__(self, images):
-        input = images[0]
-        target = images[1]
+    def __call__(self, data):
+        input = data[0]
+        target = data[1]
+        normalized_value = data[2]
 
         #input (Clip & Quantization)
         input = np.floor((np.clip(input, a_min=0, a_max=1) * 255 + 0.5)) / 255
@@ -99,7 +102,7 @@ class ToTensor(object):
         target = target.transpose((2, 0, 1))
         target = torch.from_numpy(target.copy())
 
-        return (input, target)
+        return (input, target, normalized_value)
 
 def getLogger(save_dir, save_name):
     Logger = logging.getLogger(save_name)

@@ -12,9 +12,6 @@ def custom_loss(predict, target, alpha):
     predict = torch.mul(alpha, predict)
     target = torch.mul(alpha, torch.log(target + 0.01))
 
-    tensor_shape = target.size()
-    num_pixels = tensor_shape[0] * tensor_shape[1] * tensor_shape[2] * tensor_shape[3]
-
     loss = torch.mean(((predict - target) ** 2))
 
     return loss
@@ -70,6 +67,7 @@ def train():
         with torch.no_grad():
             for iteration, batch in enumerate(valid_loader):
                 input, target = batch[0].to(device), batch[1].to(device)
+                normalized_value = batch[2].numpy()
 
                 alpha = BlendMap(input)
                 predict = model(input, alpha)
@@ -85,6 +83,8 @@ def train():
 
                 input *= 255
                 input = input.astype(np.uint8)
+                predict = predict * normalized_value
+                target = target * normalized_value
 
                 #Save images
                 imageio.imwrite('{}/epoch{}-input{}.png'.format(opt.result_dir, epoch, iteration), input)
