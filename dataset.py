@@ -42,7 +42,7 @@ class LdrHdrDataset(Dataset):
 
     def __len__(self):
         if self.is_train:
-            return self.num_batch * 10
+            return self.num_batch * 1000
         else:
             return len(self.hdr_images)
 

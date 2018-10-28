@@ -27,10 +27,10 @@ def train():
     device = torch.device("cuda" if opt.use_cuda else "cpu")
 
     model = UNet().to(device)
-    train_set = LdrHdrDataset('train/HDR', True, opt.num_batch_train)
+    train_set = LdrHdrDataset(opt.train_dir, True, opt.num_batch_train)
     train_loader = DataLoader(train_set, batch_size=opt.num_batch_train, shuffle=True, num_workers=4)
 
-    valid_set = LdrHdrDataset('val/HDR', False, opt.num_batch_test)
+    valid_set = LdrHdrDataset(opt.test_dir, False, opt.num_batch_test)
     valid_loader = DataLoader(valid_set, batch_size=opt.num_batch_test, shuffle=False, num_workers=1)
 
     loss = torch.nn.MSELoss()

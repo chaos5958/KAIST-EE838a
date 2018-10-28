@@ -1,6 +1,7 @@
 train/
 val/
-result/
+result*/
 temp/
 __pycache__/
-model/
+model*/
+final*/
