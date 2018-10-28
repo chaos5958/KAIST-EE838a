@@ -31,13 +31,6 @@ class Skip_Conv(nn.Module):
         self.conv = nn.Conv2d(in_channels=num_features_in * 2, out_channels=num_features_out, kernel_size=1, stride=1, padding=0, bias=bias)
 
         #Weight initialization: TODO
-        """
-        conv_weights = np.zeros((num_features, num_features * 2, 1, 1))
-        for idx in range(num_features):
-            conv_weights[idx, idx, 0, 0] = 1
-            conv_weights[idx, idx * 2, 0, 0] = 1
-        self.conv.weight.data = torch.from_numpy(conv_weights)
-        """
 
     def forward(self, x_input, x_skip):
         #Process a skip connection output
@@ -119,7 +112,7 @@ class UNet(nn.Module):
         self.decoder.append(nn.ModuleList().extend((decode_5_1, decode_5_2)))
         self.decoder.append(decode_6_1)
 
-    def forward(self, x):
+    def forward(self, x, alpha):
         #LDR encoder
         input_image = x
         x = self.encoder[0](x)
@@ -151,9 +144,6 @@ class UNet(nn.Module):
         x = self.decoder[5](x, input_image)
 
         #Final
-        max_input, _ = torch.max(input_image, dim=1)
-        alpha = torch.clamp(torch.clamp(max_input - 0.95, min=0) / 0.05, max=1)
-        alpha = torch.stack((alpha, alpha, alpha), dim=1)
         output = torch.mul(1-alpha, torch.pow(input_image, 2)) + torch.mul(alpha, torch.exp(x))
 
         return output
@@ -166,4 +156,3 @@ if __name__ == "__main__":
 
     output = model(tensor)
     print(output.size())
-

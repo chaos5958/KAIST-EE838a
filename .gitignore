@@ -1,0 +1,6 @@
+train/
+val/
+result/
+temp/
+__pycache__/
+model/

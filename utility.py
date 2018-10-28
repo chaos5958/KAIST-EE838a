@@ -1,5 +1,6 @@
+import torch
 import numpy as np
-import random
+import random, logging, os
 
 HDR_MIN = 0
 HDR_MAX = 100000
@@ -31,9 +32,25 @@ class RandomCrop(object):
 
         return image
 
+class RandomRotate(object):
+    def __call__(self, image):
+
+        for _ in range(random.randint(1,3)):
+            image = np.rot90(image)
+
+        if random.randint(0,1):
+            image = np.flip(image, 0)
+
+            image = np.flip(image, 1)
+
+        return image
+
 class Clip(object):
     def __call__(self, image):
-        return np.clip(image, HDR_MIN, HDR_MAX)
+
+        image = np.clip(image, a_min=HDR_MIN, a_max=HDR_MAX)
+
+        return image
 
 class Normalize(object):
     def __init__(self, image_size):
@@ -41,43 +58,61 @@ class Normalize(object):
         self.num_pixels = image_size[0] * image_size[1]
 
     def __call__(self, image):
-        image_1d = image.flatten()
-        image_1d.sort(axis=0)
+        image_mean = np.mean(image, axis=2)
+        image_1d = image_mean.flatten()
 
         rand_idx = np.random.randint(self.num_pixels * NORMALIZE_MIN, self.num_pixels * NORMALIZE_MAX)
         normalized_value = image_1d[-rand_idx]
+        image = image / normalized_value
 
-        return image / normalized_value
+        return image
 
 class CameraCurve(object):
     def __call__(self, image):
-        n = np.normal(N_MEAN, N_VAR)
-        sig = np.normal(SIG_MEAN, SIG_VAR)
+        target = image #target (x Camera curve)
 
-        image = np.power(image, n)
-        image = (1 + sig) * (image / image + sig)
+        n = np.clip(np.random.normal(N_MEAN, N_VAR), a_min=0, a_max=2.5)
+        sig = np.clip(np.random.normal(SIG_MEAN, SIG_VAR), a_min=0, a_max=5)
 
-        return image
+        input = np.power(image, n)
+        input = (1 + sig) * (input / (input + sig)) #input (o Camera curve)
 
-class RandomRotate(object):
-    def __call__(self, image):
-        image = image.rotate(90 * random.randint(1,3))
-
-        if random.randint(0,1):
-            image = np.flip(image, 0)
-
-        if random.randint(0,1):
-            image = np.flip(image, 1)
-
-        return image
+        return (input, target)
 
 class Pad(object):
     def __call__(self, image):
-        image = np.pad(image, ((0,0), (4,4), (0, 0)), 'edge')
+        image = np.pad(image, ((4,4), (0,0), (0, 0)), 'edge')
 
         return image
 
 class ToTensor(object):
-    def __call__(self, image):
-        image = image.transpose((2, 0, 1))
-        return torch.from_numpy(image)
+    def __call__(self, images):
+        input = images[0]
+        target = images[1]
+
+        #input (Clip & Quantization)
+        input = np.floor((np.clip(input, a_min=0, a_max=1) * 255 + 0.5)) / 255
+
+        input = input.transpose((2, 0, 1))
+        input = torch.from_numpy(input.copy())
+
+        target = target.transpose((2, 0, 1))
+        target = torch.from_numpy(target.copy())
+
+        return (input, target)
+
+def getLogger(save_dir, save_name):
+    Logger = logging.getLogger(save_name)
+    Logger.setLevel(logging.INFO)
+    Logger.propagate = False
+
+    filePath = os.path.join(save_dir, save_name)
+    if os.path.exists(filePath):
+        os.remove(filePath)
+
+    fileHandler = logging.FileHandler(filePath)
+    logFormatter = logging.Formatter('%(message)s')
+    fileHandler.setFormatter(logFormatter)
+    Logger.addHandler(fileHandler)
+
+    return Logger
