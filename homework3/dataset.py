@@ -10,14 +10,21 @@ class DeblurDataset(Dataset):
         assert os.path.exists(rootdir)
         self.is_train = is_train
 
-        #Read blur/sharp images
-        self.blur_filenames = []
-        self.sharp_filenames = []
 
         subdirs = os.listdir(rootdir)
-        for subdir in subdirs:
-            self.blur_filenames.extend(glob.glob('{}/{}/{}/*.png'.format(rootdir, subdir, 'blur_gamma')))
-            self.sharp_filenames.extend(glob.glob('{}/{}/{}/*.png'.format(rootdir, subdir, 'sharp')))
+
+        if self.is_train:
+            #Read blur/sharp images
+            self.blur_filenames = []
+            self.sharp_filenames = []
+
+            for subdir in subdirs:
+                self.blur_filenames.extend(glob.glob('{}/{}/{}/*.png'.format(rootdir, subdir, 'blur_gamma')))
+                self.sharp_filenames.extend(glob.glob('{}/{}/{}/*.png'.format(rootdir, subdir, 'sharp')))
+        else:
+            self.blur_filenames = ['test/GOPR0384_11_00/blur/000001.png', 'test/GOPR0384_11_05/blur/004001.png', 'test/GOPR0385_11_01/blur/003011.png']
+            self.sharp_filenames = ['test/GOPR0384_11_00/sharp/000001.png', 'test/GOPR0384_11_05/sharp/004001.png', 'test/GOPR0385_11_01/sharp/003011.png']
+
 
         self.blur_filenames.sort()
         self.sharp_filenames.sort()
@@ -55,14 +62,14 @@ class DeblurDataset(Dataset):
         sharp_imgs = []
         width, height = blur_image.size
 
+        blur_imgs.append(TF.to_tensor(blur_image.resize((width//4, height//4), resample=Image.BICUBIC)))
+        sharp_imgs.append(TF.to_tensor(sharp_image.resize((width//4, height//4), resample=Image.BICUBIC)))
+
+        blur_imgs.append(TF.to_tensor(blur_image.resize((width//2, height//2), resample=Image.BICUBIC)))
+        sharp_imgs.append(TF.to_tensor(sharp_image.resize((width//2, height//2), resample=Image.BICUBIC)))
+
         blur_imgs.append(TF.to_tensor(blur_image))
         sharp_imgs.append(TF.to_tensor(sharp_image))
-
-        blur_imgs.append(TF.to_tensor(blur_image.resize((width//2, height//2), resample=Image.BICUBIC)))
-        sharp_imgs.append(TF.to_tensor(sharp_image.resize((width//2, height//2), resample=Image.BICUBIC)))
-
-        blur_imgs.append(TF.to_tensor(blur_image.resize((width//2, height//2), resample=Image.BICUBIC)))
-        sharp_imgs.append(TF.to_tensor(sharp_image.resize((width//2, height//2), resample=Image.BICUBIC)))
 
         return blur_imgs, sharp_imgs
 
@@ -70,7 +77,10 @@ class DeblurDataset(Dataset):
         blur_image = Image.open(self.blur_filenames[idx])
         sharp_image = Image.open(self.sharp_filenames[idx])
         blur_images, sharp_images = self.transform(blur_image, sharp_image)
-        return blur_images, shapr_images
+        return blur_images[0], blur_images[1], blur_images[2], sharp_images[0], sharp_images[1], sharp_images[2]
 
 if __name__ == "__main__":
-    dataset = DeblurDataset('train', True)
+    dataset_train = DeblurDataset('train', True)
+    dataset_test = DeblurDataset('test', False)
+    print(len(dataset_train))
+    print(len(dataset_test))

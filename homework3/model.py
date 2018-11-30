@@ -63,11 +63,7 @@ class MultiNet(nn.Module):
         self.upconv_01 = nn.ConvTranspose2d(3, 3, 4, 2, 1)
         self.upconv_02 = nn.ConvTranspose2d(3, 3, 4, 2, 1)
 
-    def forward(self, x):
-        x4_input = x[0]
-        x2_input = x[1]
-        x1_input = x[2]
-
+    def forward(self, x4_input, x2_input, x1_input):
         x4_output = self.network_x4(x4_input)
         x4_output_ = self.upconv_01(x4_output)
 
@@ -88,7 +84,7 @@ if __name__ == "__main__":
     tensor_02 = torch.FloatTensor(1, 3, 128, 128).to(device)
     tensor_03 = torch.FloatTensor(1, 3, 64, 64).to(device)
 
-    output = model((tensor_03, tensor_02, tensor_01))
+    output = model(tensor_03, tensor_02, tensor_01)
     print(output[0].size())
     print(output[1].size())
     print(output[2].size())

@@ -1,2 +1,5 @@
 train/
 test/
+model/
+result/
+__pycache__/
