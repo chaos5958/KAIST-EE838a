@@ -1,0 +1,25 @@
+import os, argparse
+
+parser = argparse.ArgumentParser(description="PyTorch Super Resolution")
+
+parser.add_argument("--num_epoch", type=int, default=300)
+parser.add_argument("--num_batch_per_epoch", type=int, default=1000)
+parser.add_argument("--lr", type=int, default=1e-04)
+parser.add_argument("--model_dir", type=str, default='model')
+parser.add_argument("--board_dir", type=str, default='log')
+parser.add_argument("--train_dir", type=str, default='data/train')
+parser.add_argument("--valid_dir", type=str, default='data/valid')
+parser.add_argument("--data_dir", type=str, default='data')
+parser.add_argument("--test_dir", type=str)
+parser.add_argument("--gpu_idx", type=int, default=0)
+parser.add_argument("--loss_type", type=str, default='l1')
+parser.add_argument("--scale", type=int, default=2)
+parser.add_argument("--num_patch", type=int, default=100000)
+parser.add_argument("--patch_size", type=int, default=64)
+parser.add_argument("--num_batch", type=int, default=64)
+parser.add_argument("--load_on_memory", action='store_true')
+parser.add_argument("--num_sample", type=int, default=5)
+args = parser.parse_args()
+
+os.makedirs(args.model_dir, exist_ok=True)
+os.makedirs(args.board_dir, exist_ok=True)
