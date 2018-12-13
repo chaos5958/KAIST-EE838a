@@ -56,11 +56,12 @@ def crop_resize_image(blur_image, sharp_image):
         #Crop
         stacked_cropped_image = tf.image.random_crop(stacked_image, [2, args.patch_size, args.patch_size, 3])
 
-        #Augmentation
-        stacked_cropped_image = tf.image.random_flip_left_right(stacked_cropped_image)
-        stacked_cropped_image = tf.image.random_flip_up_down(stacked_cropped_image)
-        for _ in range(random.randint(0,3)):
-            stacked_cropped_image = tf.image.rot90(stacked_cropped_image)
+        #Augmentation: 1) flip-h, 2) flip-v, 3) rot
+        if random.randint(0,1):
+            stacked_cropped_image = tf.image.flip_left_right(stacked_cropped_image)
+        if random.randint(0,1):
+            stacked_cropped_image = tf.image.flip_up_down(stacked_cropped_image)
+        stacked_cropped_image = tf.image.rot90(stacked_cropped_image, k=random.randint(0,3))
 
         #Split
         blur_cropped_image, sharp_cropped_image = tf.split(stacked_cropped_image, num_or_size_splits=2, axis=0)
@@ -136,7 +137,6 @@ for i in range(args.num_patch):
 
     rand_idx = random.randint(0, len(train_blur_filenames) - 1)
     blur_images, sharp_images = crop_resize_image(train_blur_filenames[rand_idx], train_sharp_filenames[rand_idx])
-    """
     Image.fromarray(np.uint8(blur_images['x4'].numpy()*255)).save('blur_x4.png')
     Image.fromarray(np.uint8(sharp_images['x4'].numpy()*255)).save('sharp_x4.png')
     Image.fromarray(np.uint8(blur_images['x2'].numpy()*255)).save('blur_x2.png')
@@ -144,6 +144,7 @@ for i in range(args.num_patch):
     Image.fromarray(np.uint8(blur_images['x1'].numpy()*255)).save('blur_x1.png')
     Image.fromarray(np.uint8(sharp_images['x1'].numpy()*255)).save('sharp_x1.png')
     sys.exit()
+    """
     """
     feature = {
         'blur_image_x4_raw': _bytes_feature(blur_images['x4'].numpy().tostring()),

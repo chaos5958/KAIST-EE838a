@@ -36,11 +36,6 @@ class ResBlock(tf.keras.Model):
 
         return output
 
-def _subpixel_function(x):
-    input = x[0]
-    scale = x[1]
-    return tf.depth_to_space(input, scale)
-
 class SubModel(tf.keras.Model):
     def __init__(self, weight_decay=1e-04):
         super(SubModel, self).__init__()
