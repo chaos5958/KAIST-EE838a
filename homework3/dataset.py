@@ -49,8 +49,8 @@ class TFRecordDataset():
                 'width': tf.FixedLenFeature((), tf.int64)}
         parsed_features = tf.parse_single_example(example_proto, features)
 
-        width = parsed_features['width']
         height = parsed_features['height']
+        width = parsed_features['width']
 
         blur_images = {}
         blur_images['x4'] = tf.decode_raw(parsed_features['blur_image_x4_raw'], tf.float32)
@@ -72,29 +72,26 @@ class TFRecordDataset():
 
     def create_train_dataset(self):
         dataset = tf.data.TFRecordDataset(self.train_tfrecord_path, num_parallel_reads=4)
-        dataset = dataset.map(self._train_parse_function, num_parallel_calls=4)
 
         if self.load_on_memory:
             dataset = dataset.cache()
 
         dataset = dataset.shuffle(10000)
         dataset = dataset.repeat(None)
+        dataset = dataset.map(self._train_parse_function, num_parallel_calls=4)
         dataset = dataset.batch(self.num_batch)
         dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
 
         return dataset
 
-    def create_test_dataset(self, num_sample=None):
+    def create_test_dataset(self):
         dataset = tf.data.TFRecordDataset(self.test_tfrecord_path)
-        dataset = dataset.map(self._test_parse_function, num_parallel_calls=4)
-
-        if num_sample is not None:
-            dataset = dataset.take(num_sample)
 
         if self.load_on_memory:
             dataset = dataset.cache()
 
         dataset = dataset.repeat(1)
+        dataset = dataset.map(self._test_parse_function, num_parallel_calls=4)
         dataset = dataset.batch(1)
         dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
 
