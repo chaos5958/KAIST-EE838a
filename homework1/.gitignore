@@ -1,5 +1,6 @@
 data/
 log/
 model/
+model_all/
 __pycache__/
 *.png
