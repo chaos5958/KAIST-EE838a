@@ -86,8 +86,8 @@ def crop_resize_image(blur_image, sharp_image):
         return blur_cropped_images, sharp_cropped_images
 
 #tfrecord
-train_tf_records_filename = os.path.join(args.data_dir, 'train.tfrecords')
-test_tf_records_filename = os.path.join(args.data_dir, 'test.tfrecords')
+train_tf_records_filename = os.path.join(args.data_dir, 'train_tmp.tfrecords')
+test_tf_records_filename = os.path.join(args.data_dir, 'test_tmp.tfrecords')
 train_writer = tf.io.TFRecordWriter(train_tf_records_filename)
 test_writer = tf.io.TFRecordWriter(test_tf_records_filename)
 
